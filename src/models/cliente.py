@@ -1,7 +1,7 @@
 """
 Modelo Cliente para o sistema de restaurante de delivery
 """
-from mongoengine import Document, StringField, EmailField, ListField, EmbeddedDocumentField, EmbeddedDocument
+from mongoengine import Document, StringField, EmailField, ListField, EmbeddedDocumentField, EmbeddedDocument, DateTimeField
 from datetime import datetime
 
 class Endereco(EmbeddedDocument):
