@@ -5,67 +5,124 @@ from fastapi import APIRouter, HTTPException, status
 from typing import List
 from src.models.produto import Produto, Acompanhamento
 from src.models.categoria import Categoria
+from src.schemas.produto_schemas import ProdutoCreate, ProdutoUpdate, ProdutoResponse
+from src.utils.validators import validate_object_id
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout
+from mongoengine.errors import ValidationError, NotUniqueError
+from decimal import Decimal, InvalidOperation
 
 router = APIRouter(prefix="/produtos", tags=["produtos"])
 
-@router.get("/", response_model=List[dict])
+@router.get("/", response_model=List[ProdutoResponse])
 async def get_produtos():
     """Listar todos os produtos"""
     try:
         produtos = Produto.objects()
         return [produto.to_dict() for produto in produtos]
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao listar produtos: {str(e)}"
         )
 
-@router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
-async def add_produto(produto_data: dict):
+@router.post("/", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED)
+async def add_produto(produto_data: ProdutoCreate):
     """Criar novo produto"""
     try:
-        # Validar campos obrigatórios
-        required_fields = ['categoria_id', 'titulo', 'preco']
-        for field in required_fields:
-            if not produto_data.get(field):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Campo '{field}' é obrigatório"
-                )
+        # Validar categoria_id
+        categoria_id = validate_object_id(produto_data.categoria_id, "ID da categoria")
         
         # Verificar se a categoria existe
-        categoria = Categoria.objects(id=produto_data['categoria_id']).first()
+        categoria = Categoria.objects(id=categoria_id).first()
         if not categoria:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Categoria não encontrada"
             )
         
+        # Validar e converter preços
+        try:
+            preco_decimal = Decimal(str(produto_data.preco))
+            if preco_decimal <= 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Preço deve ser maior que zero"
+                )
+        except (InvalidOperation, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Preço deve ser um número válido"
+            )
+        
+        preco_promocional_decimal = None
+        if produto_data.preco_promocional is not None:
+            try:
+                preco_promocional_decimal = Decimal(str(produto_data.preco_promocional))
+                if preco_promocional_decimal <= 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Preço promocional deve ser maior que zero"
+                    )
+            except (InvalidOperation, ValueError):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Preço promocional deve ser um número válido"
+                )
+        
         # Processar acompanhamentos se fornecidos
         acompanhamentos = []
-        if produto_data.get('acompanhamentos'):
-            for acomp_data in produto_data['acompanhamentos']:
+        if produto_data.acompanhamentos:
+            for acomp_data in produto_data.acompanhamentos:
+                try:
+                    preco_acomp = Decimal(str(acomp_data.preco))
+                    if preco_acomp <= 0:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Preço do acompanhamento '{acomp_data.nome}' deve ser maior que zero"
+                        )
+                except (InvalidOperation, ValueError):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Preço do acompanhamento '{acomp_data.nome}' deve ser um número válido"
+                    )
+                
                 acompanhamento = Acompanhamento(
-                    nome=acomp_data['nome'],
-                    preco=acomp_data['preco']
+                    nome=acomp_data.nome,
+                    preco=preco_acomp
                 )
                 acompanhamentos.append(acompanhamento)
         
         # Criar produto
         produto = Produto(
             categoria=categoria,
-            titulo=produto_data['titulo'],
-            descricao_capa=produto_data.get('descricao_capa'),
-            descricao_geral=produto_data.get('descricao_geral'),
-            preco=produto_data['preco'],
-            preco_promocional=produto_data.get('preco_promocional'),
-            status=produto_data.get('status', 'Ativo'),
-            estrelas_kaiserhaus=produto_data.get('estrelas_kaiserhaus', False),
+            titulo=produto_data.titulo,
+            descricao_capa=produto_data.descricao_capa,
+            descricao_geral=produto_data.descricao_geral,
+            preco=preco_decimal,
+            preco_promocional=preco_promocional_decimal,
+            status=produto_data.status,
+            estrelas_kaiserhaus=produto_data.estrelas_kaiserhaus,
             acompanhamentos=acompanhamentos
         )
         
         produto.save()
         return produto.to_dict()
+        
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
+        )
+    except (ValidationError, NotUniqueError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Erro de validação: {str(e)}"
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -74,11 +131,14 @@ async def add_produto(produto_data: dict):
             detail=f"Erro ao criar produto: {str(e)}"
         )
 
-@router.get("/{produto_id}", response_model=dict)
+@router.get("/{produto_id}", response_model=ProdutoResponse)
 async def get_produto(produto_id: str):
     """Buscar produto por ID"""
     try:
-        produto = Produto.objects(id=produto_id).first()
+        # Validar ObjectId
+        object_id = validate_object_id(produto_id, "ID do produto")
+        
+        produto = Produto.objects(id=object_id).first()
         if not produto:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -87,17 +147,25 @@ async def get_produto(produto_id: str):
         return produto.to_dict()
     except HTTPException:
         raise
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao buscar produto: {str(e)}"
         )
 
-@router.put("/{produto_id}", response_model=dict)
-async def update_produto(produto_id: str, produto_data: dict):
+@router.put("/{produto_id}", response_model=ProdutoResponse)
+async def update_produto(produto_id: str, produto_data: ProdutoUpdate):
     """Atualizar produto"""
     try:
-        produto = Produto.objects(id=produto_id).first()
+        # Validar ObjectId
+        object_id = validate_object_id(produto_id, "ID do produto")
+        
+        produto = Produto.objects(id=object_id).first()
         if not produto:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -105,8 +173,9 @@ async def update_produto(produto_id: str, produto_data: dict):
             )
         
         # Atualizar categoria se fornecida
-        if produto_data.get('categoria_id'):
-            categoria = Categoria.objects(id=produto_data['categoria_id']).first()
+        if produto_data.categoria_id:
+            categoria_id = validate_object_id(produto_data.categoria_id, "ID da categoria")
+            categoria = Categoria.objects(id=categoria_id).first()
             if not categoria:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -114,24 +183,64 @@ async def update_produto(produto_id: str, produto_data: dict):
                 )
             produto.categoria = categoria
         
-        # Atualizar outros campos
-        for field, value in produto_data.items():
-            if field == 'categoria_id':
-                continue
-            elif field == 'acompanhamentos' and value:
-                acompanhamentos = []
-                for acomp_data in value:
-                    acompanhamento = Acompanhamento(
-                        nome=acomp_data['nome'],
-                        preco=acomp_data['preco']
+        # Atualizar acompanhamentos se fornecidos
+        if produto_data.acompanhamentos is not None:
+            acompanhamentos = []
+            for acomp_data in produto_data.acompanhamentos:
+                try:
+                    preco_acomp = Decimal(str(acomp_data.preco))
+                    if preco_acomp <= 0:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Preço do acompanhamento '{acomp_data.nome}' deve ser maior que zero"
+                        )
+                except (InvalidOperation, ValueError):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Preço do acompanhamento '{acomp_data.nome}' deve ser um número válido"
                     )
-                    acompanhamentos.append(acompanhamento)
-                produto.acompanhamentos = acompanhamentos
-            elif hasattr(produto, field):
-                setattr(produto, field, value)
+                
+                acompanhamento = Acompanhamento(
+                    nome=acomp_data.nome,
+                    preco=preco_acomp
+                )
+                acompanhamentos.append(acompanhamento)
+            produto.acompanhamentos = acompanhamentos
+        
+        # Atualizar outros campos com validação de preços
+        update_data = produto_data.dict(exclude_unset=True, exclude={'categoria_id', 'acompanhamentos'})
+        for field, value in update_data.items():
+            if hasattr(produto, field):
+                if field in ['preco', 'preco_promocional'] and value is not None:
+                    try:
+                        validated_value = Decimal(str(value))
+                        if validated_value <= 0:
+                            raise HTTPException(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                detail=f"{field} deve ser maior que zero"
+                            )
+                        setattr(produto, field, validated_value)
+                    except (InvalidOperation, ValueError):
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"{field} deve ser um número válido"
+                        )
+                else:
+                    setattr(produto, field, value)
         
         produto.save()
         return produto.to_dict()
+        
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
+        )
+    except (ValidationError, NotUniqueError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Erro de validação: {str(e)}"
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -144,7 +253,10 @@ async def update_produto(produto_id: str, produto_data: dict):
 async def delete_produto(produto_id: str):
     """Deletar produto"""
     try:
-        produto = Produto.objects(id=produto_id).first()
+        # Validar ObjectId
+        object_id = validate_object_id(produto_id, "ID do produto")
+        
+        produto = Produto.objects(id=object_id).first()
         if not produto:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -155,17 +267,25 @@ async def delete_produto(produto_id: str):
         return None
     except HTTPException:
         raise
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao deletar produto: {str(e)}"
         )
 
-@router.get("/categoria/{categoria_id}", response_model=List[dict])
+@router.get("/categoria/{categoria_id}", response_model=List[ProdutoResponse])
 async def listar_produtos_por_categoria(categoria_id: str):
     """Listar produtos por categoria"""
     try:
-        categoria = Categoria.objects(id=categoria_id).first()
+        # Validar ObjectId
+        object_id = validate_object_id(categoria_id, "ID da categoria")
+        
+        categoria = Categoria.objects(id=object_id).first()
         if not categoria:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -176,18 +296,28 @@ async def listar_produtos_por_categoria(categoria_id: str):
         return [produto.to_dict() for produto in produtos]
     except HTTPException:
         raise
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao listar produtos por categoria: {str(e)}"
         )
 
-@router.get("/estrelas-kaiserhaus", response_model=List[dict])
+@router.get("/estrelas-kaiserhaus", response_model=List[ProdutoResponse])
 async def listar_estrelas_kaiserhaus():
     """Listar produtos que fazem parte das estrelas da Kaiserhaus"""
     try:
         produtos = Produto.objects(estrelas_kaiserhaus=True)
         return [produto.to_dict() for produto in produtos]
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
