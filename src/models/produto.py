@@ -1,7 +1,7 @@
 """
 Modelo Produto para o sistema de restaurante de delivery
 """
-from mongoengine import Document, StringField, DecimalField, TextField, ReferenceField, ListField, EmbeddedDocumentField, EmbeddedDocument, DateTimeField, BooleanField
+from mongoengine import Document, StringField, DecimalField, ReferenceField, ListField, EmbeddedDocumentField, EmbeddedDocument, DateTimeField, BooleanField
 from datetime import datetime
 
 class Acompanhamento(EmbeddedDocument):
@@ -24,7 +24,7 @@ class Produto(Document):
     categoria = ReferenceField('Categoria', required=True)
     titulo = StringField(required=True, max_length=200)
     descricao_capa = StringField(max_length=250)
-    descricao_geral = TextField()
+    descricao_geral = StringField()
     preco = DecimalField(required=True, precision=2)
     preco_promocional = DecimalField(precision=2)
     status = StringField(default="Ativo", max_length=20, choices=["Ativo", "Inativo", "Indisponível"])
