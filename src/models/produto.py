@@ -1,7 +1,7 @@
 """
 Modelo Produto para o sistema de restaurante de delivery
 """
-from mongoengine import Document, StringField, DecimalField, TextField, ReferenceField, ListField, EmbeddedDocumentField, EmbeddedDocument, DateTimeField
+from mongoengine import Document, StringField, DecimalField, TextField, ReferenceField, ListField, EmbeddedDocumentField, EmbeddedDocument, DateTimeField, BooleanField
 from datetime import datetime
 
 class Acompanhamento(EmbeddedDocument):
@@ -28,6 +28,7 @@ class Produto(Document):
     preco = DecimalField(required=True, precision=2)
     preco_promocional = DecimalField(precision=2)
     status = StringField(default="Ativo", max_length=20, choices=["Ativo", "Inativo", "Indisponível"])
+    estrelas_kaiserhaus = BooleanField(default=False)
     acompanhamentos = ListField(EmbeddedDocumentField(Acompanhamento), default=[])
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
@@ -51,6 +52,7 @@ class Produto(Document):
             'preco': float(self.preco),
             'preco_promocional': float(self.preco_promocional) if self.preco_promocional else None,
             'status': self.status,
+            'estrelas_kaiserhaus': self.estrelas_kaiserhaus,
             'acompanhamentos': [acomp.to_dict() for acomp in self.acompanhamentos],
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None

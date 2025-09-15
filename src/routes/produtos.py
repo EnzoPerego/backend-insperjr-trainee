@@ -60,6 +60,7 @@ async def add_produto(produto_data: dict):
             preco=produto_data['preco'],
             preco_promocional=produto_data.get('preco_promocional'),
             status=produto_data.get('status', 'Ativo'),
+            estrelas_kaiserhaus=produto_data.get('estrelas_kaiserhaus', False),
             acompanhamentos=acompanhamentos
         )
         
@@ -179,4 +180,16 @@ async def listar_produtos_por_categoria(categoria_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao listar produtos por categoria: {str(e)}"
+        )
+
+@router.get("/estrelas-kaiserhaus", response_model=List[dict])
+async def listar_estrelas_kaiserhaus():
+    """Listar produtos que fazem parte das estrelas da Kaiserhaus"""
+    try:
+        produtos = Produto.objects(estrelas_kaiserhaus=True)
+        return [produto.to_dict() for produto in produtos]
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao listar estrelas da Kaiserhaus: {str(e)}"
         )
