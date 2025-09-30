@@ -4,6 +4,8 @@ Rotas para gerenciamento de clientes
 from fastapi import APIRouter, HTTPException, status
 from typing import List
 from src.models.cliente import Cliente, Endereco
+from src.models.funcionario import Funcionario
+from src.utils.security import hash_password
 
 router = APIRouter(prefix="/clientes", tags=["clientes"])
 
@@ -32,8 +34,8 @@ async def add_cliente(cliente_data: dict):
                     detail=f"Campo '{field}' é obrigatório"
                 )
         
-        # Verificar se já existe cliente com esse email
-        if Cliente.objects(email=cliente_data['email']).first():
+        # Verificar se já existe cliente/funcionario com esse email (unicidade global)
+        if Cliente.objects(email=cliente_data['email']).first() or Funcionario.objects(email=cliente_data['email']).first():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Já existe um cliente com esse email"
@@ -57,7 +59,7 @@ async def add_cliente(cliente_data: dict):
         cliente = Cliente(
             nome=cliente_data['nome'],
             email=cliente_data['email'],
-            senha=cliente_data['senha'],
+            senha=hash_password(cliente_data['senha']),
             telefone=cliente_data.get('telefone'),
             enderecos=enderecos
         )
@@ -102,9 +104,9 @@ async def update_cliente(cliente_id: str, cliente_data: dict):
                 detail="Cliente não encontrado"
             )
         
-        # Verificar se email já existe em outro cliente
+        # Verificar se email já existe em outro cliente ou funcionario
         if cliente_data.get('email') and cliente_data['email'] != cliente.email:
-            if Cliente.objects(email=cliente_data['email']).first():
+            if Cliente.objects(email=cliente_data['email']).first() or Funcionario.objects(email=cliente_data['email']).first():
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Já existe um cliente com esse email"
@@ -129,6 +131,8 @@ async def update_cliente(cliente_id: str, cliente_data: dict):
         for field, value in cliente_data.items():
             if field == 'enderecos':
                 continue
+            elif field == 'senha' and value:
+                setattr(cliente, field, hash_password(value))
             elif hasattr(cliente, field):
                 setattr(cliente, field, value)
         

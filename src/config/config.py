@@ -17,7 +17,7 @@ def get_database_name():
 
 def get_cors_origins():
     """Retorna as origens permitidas para CORS"""
-    origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8080")
+    origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8080,http://localhost:5173,http://127.0.0.1:5173")
     return [origin.strip() for origin in origins.split(",")]
 
 def get_host():
