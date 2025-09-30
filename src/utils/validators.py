@@ -4,6 +4,7 @@ Utilitários para validação
 from bson import ObjectId
 from fastapi import HTTPException, status
 from typing import Optional
+import re
 
 def validate_object_id(id_string: str, field_name: str = "ID") -> ObjectId:
     """
@@ -39,6 +40,17 @@ def safe_object_id(id_string: Optional[str]) -> Optional[ObjectId]:
     """
     if not id_string:
         return None
+
+
+def validate_cpf_format(cpf: str) -> bool:
+    """
+    Valida apenas o formato básico do CPF (11 dígitos numéricos).
+    Para checagem completa dos dígitos verificadores, implementar regra completa se necessário.
+    """
+    if not cpf:
+        return False
+    digits = re.sub(r"\D", "", cpf)
+    return len(digits) == 11 and digits != digits[0] * 11
     
     try:
         return ObjectId(id_string)
