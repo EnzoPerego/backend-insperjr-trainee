@@ -103,6 +103,7 @@ async def add_produto(produto_data: ProdutoCreate):
             titulo=produto_data.titulo,
             descricao_capa=produto_data.descricao_capa,
             descricao_geral=produto_data.descricao_geral,
+            image_url=produto_data.image_url,
             preco=preco_decimal,
             preco_promocional=preco_promocional_decimal,
             status=produto_data.status,
