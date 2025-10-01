@@ -1,12 +1,13 @@
 """
 Rotas para gerenciamento de produtos
 """
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from src.models.produto import Produto, Acompanhamento
 from src.models.categoria import Categoria
 from src.schemas.produto_schemas import ProdutoCreate, ProdutoUpdate, ProdutoResponse
 from src.utils.validators import validate_object_id
+from src.utils.dependencies import get_current_user, require_role
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout
 from mongoengine.errors import ValidationError, NotUniqueError
 from decimal import Decimal, InvalidOperation
@@ -30,7 +31,7 @@ async def get_produtos():
             detail=f"Erro ao listar produtos: {str(e)}"
         )
 
-@router.post("/", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_role("admin"))])
 async def add_produto(produto_data: ProdutoCreate):
     """Criar novo produto"""
     try:
@@ -159,7 +160,7 @@ async def get_produto(produto_id: str):
             detail=f"Erro ao buscar produto: {str(e)}"
         )
 
-@router.put("/{produto_id}", response_model=ProdutoResponse)
+@router.put("/{produto_id}", response_model=ProdutoResponse, dependencies=[Depends(require_role("admin"))])
 async def update_produto(produto_id: str, produto_data: ProdutoUpdate):
     """Atualizar produto"""
     try:
@@ -250,7 +251,7 @@ async def update_produto(produto_id: str, produto_data: ProdutoUpdate):
             detail=f"Erro ao atualizar produto: {str(e)}"
         )
 
-@router.delete("/{produto_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{produto_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_role("admin"))])
 async def delete_produto(produto_id: str):
     """Deletar produto"""
     try:

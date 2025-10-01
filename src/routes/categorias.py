@@ -1,11 +1,12 @@
 """
 Rotas para gerenciamento de categorias
 """
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from src.models.categoria import Categoria
 from src.schemas.categoria_schemas import CategoriaCreate, CategoriaUpdate, CategoriaResponse
 from src.utils.validators import validate_object_id
+from src.utils.dependencies import require_role
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout
 from mongoengine.errors import ValidationError, NotUniqueError
 
@@ -33,7 +34,7 @@ async def get_categorias():
             detail=f"Erro ao listar categorias: {str(e)}"
         )
 
-@router.post("/", response_model=CategoriaResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=CategoriaResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_role("admin"))])
 async def add_categoria(categoria_data: CategoriaCreate):
     """Criar nova categoria"""
     try:
@@ -92,7 +93,7 @@ async def get_categoria(categoria_id: str):
             detail=f"Erro ao buscar categoria: {str(e)}"
         )
 
-@router.put("/{categoria_id}", response_model=CategoriaResponse)
+@router.put("/{categoria_id}", response_model=CategoriaResponse, dependencies=[Depends(require_role("admin"))])
 async def update_categoria(categoria_id: str, categoria_data: CategoriaUpdate):
     """Atualizar categoria"""
     try:
@@ -140,7 +141,7 @@ async def update_categoria(categoria_id: str, categoria_data: CategoriaUpdate):
             detail=f"Erro ao atualizar categoria: {str(e)}"
         )
 
-@router.delete("/{categoria_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{categoria_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_role("admin"))])
 async def delete_categoria(categoria_id: str):
     """Deletar categoria"""
     try:
