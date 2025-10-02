@@ -4,9 +4,13 @@ Aplicação principal do sistema de restaurante de delivery
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mongoengine import connect
-from src.routes import categorias_router, produtos_router, clientes_router, auth_router, funcionarios_router, files_router
+
+from src.routes import categorias_router, produtos_router, clientes_router, auth_router, funcionarios_router, pedidos_router,  files_router
+
+
 from fastapi.staticfiles import StaticFiles
 import os
+
 from src.config.config import get_mongodb_url, get_database_name, get_cors_origins
 
 # Criar aplicação FastAPI
@@ -47,12 +51,16 @@ app.include_router(produtos_router)
 app.include_router(clientes_router)
 app.include_router(auth_router)
 app.include_router(funcionarios_router)
+
+app.include_router(pedidos_router)
+
 app.include_router(files_router)
 
 # Servir arquivos estáticos de uploads
 uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
 os.makedirs(uploads_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
 
 @app.get("/")
 async def root():

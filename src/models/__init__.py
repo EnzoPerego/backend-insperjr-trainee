@@ -5,6 +5,7 @@ from .categoria import Categoria
 from .produto import Produto, Acompanhamento
 from .cliente import Cliente, Endereco
 from .funcionario import Funcionario
+from .pedido import Pedido, PedidoHistoricoStatus, PedidoItem
 
 __all__ = [
     'Categoria',
@@ -12,5 +13,8 @@ __all__ = [
     'Acompanhamento',
     'Cliente',
     'Endereco',
-    'Funcionario'
+    'Funcionario',
+    'Pedido',
+    'PedidoHistoricoStatus',
+    'PedidoItem'
 ]
