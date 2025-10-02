@@ -5,8 +5,8 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from src.models import Funcionario
 from src.utils.security import hash_password
+from src.utils.validators import validate_cpf_format, validate_object_id
 from src.utils.dependencies import require_role
-from src.utils.validators import validate_cpf_format
 
 
 router = APIRouter(prefix="/funcionarios", tags=["funcionarios"])
@@ -48,4 +48,18 @@ async def create_funcionario(data: dict):
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao criar funcionário: {str(e)}")
 
+
+@router.delete("/{funcionario_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_role("admin"))])
+async def delete_funcionario(funcionario_id: str):
+    try:
+        object_id = validate_object_id(funcionario_id, "ID do funcionário")
+        funcionario = Funcionario.objects(id=object_id).first()
+        if not funcionario:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado")
+        funcionario.delete()
+        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao deletar funcionário: {str(e)}")
 

@@ -20,6 +20,7 @@ class ProdutoBase(BaseModel):
     titulo: str = Field(..., min_length=1, max_length=200, description="Título do produto")
     descricao_capa: Optional[str] = Field(None, max_length=250, description="Descrição da capa")
     descricao_geral: Optional[str] = Field(None, description="Descrição geral")
+    image_url: Optional[str] = Field(None, max_length=500, description="URL da imagem do produto")
     preco: float = Field(..., gt=0, description="Preço do produto")
     preco_promocional: Optional[float] = Field(None, gt=0, description="Preço promocional")
     status: str = Field("Ativo", description="Status do produto")
