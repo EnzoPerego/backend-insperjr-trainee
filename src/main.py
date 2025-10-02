@@ -4,7 +4,7 @@ Aplicação principal do sistema de restaurante de delivery
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mongoengine import connect
-from src.routes import categorias_router, produtos_router, clientes_router, auth_router, funcionarios_router
+from src.routes import categorias_router, produtos_router, clientes_router, auth_router, funcionarios_router, pedidos_router
 from src.config.config import get_mongodb_url, get_database_name, get_cors_origins
 
 # Criar aplicação FastAPI
@@ -45,6 +45,7 @@ app.include_router(produtos_router)
 app.include_router(clientes_router)
 app.include_router(auth_router)
 app.include_router(funcionarios_router)
+app.include_router(pedidos_router)
 
 @app.get("/")
 async def root():
