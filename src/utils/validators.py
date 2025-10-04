@@ -40,7 +40,11 @@ def safe_object_id(id_string: Optional[str]) -> Optional[ObjectId]:
     """
     if not id_string:
         return None
-
+    
+    try:
+        return ObjectId(id_string)
+    except Exception:
+        return None
 
 def validate_cpf_format(cpf: str) -> bool:
     """
@@ -51,8 +55,3 @@ def validate_cpf_format(cpf: str) -> bool:
         return False
     digits = re.sub(r"\D", "", cpf)
     return len(digits) == 11 and digits != digits[0] * 11
-    
-    try:
-        return ObjectId(id_string)
-    except Exception:
-        return None

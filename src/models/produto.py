@@ -28,6 +28,7 @@ class Produto(Document):
     image_url = StringField(max_length=500)
     preco = DecimalField(required=True, precision=2)
     preco_promocional = DecimalField(precision=2)
+    image_url = StringField(max_length=500)  # Campo para URL da imagem
     status = StringField(default="Ativo", max_length=20, choices=["Ativo", "Inativo", "Indisponível"])
     estrelas_kaiserhaus = BooleanField(default=False)
     acompanhamentos = ListField(EmbeddedDocumentField(Acompanhamento), default=[])
@@ -53,6 +54,7 @@ class Produto(Document):
             'image_url': self.image_url,
             'preco': float(self.preco),
             'preco_promocional': float(self.preco_promocional) if self.preco_promocional else None,
+            'image_url': self.image_url,
             'status': self.status,
             'estrelas_kaiserhaus': self.estrelas_kaiserhaus,
             'acompanhamentos': [acomp.to_dict() for acomp in self.acompanhamentos],

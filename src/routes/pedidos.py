@@ -55,7 +55,6 @@ def para_decimal(value, field_label: str, allow_zero: bool = True) -> Decimal:
 async def add_pedido(payload: PedidoCreate):
     """Criar novo pedido"""
     try:
-    
         cliente_id = validate_object_id(payload.cliente_id, "ID do cliente")
 
         cliente = Cliente.objects(id=cliente_id).first()
@@ -73,7 +72,6 @@ async def add_pedido(payload: PedidoCreate):
         
         endereco = cliente.enderecos[payload.endereco_index]
 
-    
         itens_doc: list[PedidoItem] = []
         subtotal = Decimal("0")
 
@@ -86,7 +84,6 @@ async def add_pedido(payload: PedidoCreate):
                     detail="Produto não encontrado",
                 )
 
-       
             preco_unit = produto.preco_promocional or produto.preco
             if preco_unit is None:
                 raise HTTPException(
