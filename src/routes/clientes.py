@@ -6,6 +6,7 @@ from typing import List
 from src.models.cliente import Cliente, Endereco
 from src.models.funcionario import Funcionario
 from src.utils.security import hash_password
+from src.utils.dependencies import get_current_user, require_role, AuthenticatedUser
 
 router = APIRouter(prefix="/clientes", tags=["clientes"])
 
@@ -208,3 +209,67 @@ async def adicionar_endereco(cliente_id: str, endereco_data: dict):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao adicionar endereço: {str(e)}"
         )
+
+
+@router.get("/{cliente_id}/enderecos", response_model=dict)
+async def listar_enderecos(cliente_id: str):
+    """Listar endereços de um cliente"""
+    try:
+        cliente = Cliente.objects(id=cliente_id).first()
+        if not cliente:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado")
+        return {"enderecos": [e.to_dict() for e in cliente.enderecos]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao listar endereços: {str(e)}")
+
+
+@router.put("/{cliente_id}/enderecos/{endereco_id}", response_model=dict)
+async def atualizar_endereco(cliente_id: str, endereco_id: str, endereco_data: dict):
+    """Atualizar um endereço do cliente"""
+    try:
+        cliente = Cliente.objects(id=cliente_id).first()
+        if not cliente:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado")
+
+        found = False
+        for idx, end in enumerate(cliente.enderecos):
+            if str(getattr(end, 'id', '')) == endereco_id:
+                # Atualizar campos
+                for field in ['rua', 'numero', 'bairro', 'cidade', 'cep', 'complemento']:
+                    if field in endereco_data and endereco_data[field] is not None:
+                        setattr(cliente.enderecos[idx], field, endereco_data[field])
+                found = True
+                break
+
+        if not found:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Endereço não encontrado")
+
+        cliente.save()
+        return cliente.to_dict_safe()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao atualizar endereço: {str(e)}")
+
+
+@router.delete("/{cliente_id}/enderecos/{endereco_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remover_endereco(cliente_id: str, endereco_id: str):
+    """Remover um endereço do cliente"""
+    try:
+        cliente = Cliente.objects(id=cliente_id).first()
+        if not cliente:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado")
+
+        original_len = len(cliente.enderecos)
+        cliente.enderecos = [e for e in cliente.enderecos if str(getattr(e, 'id', '')) != endereco_id]
+        if len(cliente.enderecos) == original_len:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Endereço não encontrado")
+
+        cliente.save()
+        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao remover endereço: {str(e)}")

@@ -25,6 +25,7 @@ class Produto(Document):
     titulo = StringField(required=True, max_length=200)
     descricao_capa = StringField(max_length=250)
     descricao_geral = StringField()
+    image_url = StringField(max_length=500)
     preco = DecimalField(required=True, precision=2)
     preco_promocional = DecimalField(precision=2)
     image_url = StringField(max_length=500)  # Campo para URL da imagem
@@ -50,6 +51,7 @@ class Produto(Document):
             'titulo': self.titulo,
             'descricao_capa': self.descricao_capa,
             'descricao_geral': self.descricao_geral,
+            'image_url': self.image_url,
             'preco': float(self.preco),
             'preco_promocional': float(self.preco_promocional) if self.preco_promocional else None,
             'image_url': self.image_url,

@@ -3,11 +3,13 @@ Modelo Cliente para o sistema de restaurante de delivery
 """
 from mongoengine import Document, StringField, EmailField, ListField, EmbeddedDocumentField, EmbeddedDocument, DateTimeField
 from datetime import datetime
+import uuid
 
 class Endereco(EmbeddedDocument):
     """
     Modelo para endereços de entrega dos clientes
     """
+    id = StringField(required=True, default=lambda: str(uuid.uuid4()))
     rua = StringField(required=True, max_length=200)
     numero = StringField(required=True, max_length=20)
     bairro = StringField(required=True, max_length=100)
@@ -17,6 +19,7 @@ class Endereco(EmbeddedDocument):
     
     def to_dict(self):
         return {
+            'id': self.id,
             'rua': self.rua,
             'numero': self.numero,
             'bairro': self.bairro,
