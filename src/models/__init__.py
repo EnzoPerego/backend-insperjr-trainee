@@ -6,6 +6,7 @@ from .produto import Produto, Acompanhamento
 from .cliente import Cliente, Endereco
 from .funcionario import Funcionario
 from .pedido import Pedido, PedidoHistoricoStatus, PedidoItem
+from .password_reset import TokenResetSenha
 
 __all__ = [
     'Categoria',
@@ -16,5 +17,6 @@ __all__ = [
     'Funcionario',
     'Pedido',
     'PedidoHistoricoStatus',
-    'PedidoItem'
+    'PedidoItem',
+    'TokenResetSenha'
 ]

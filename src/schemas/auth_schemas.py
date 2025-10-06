@@ -16,3 +16,13 @@ class TokenResponse(BaseModel):
     user: dict
 
 
+class SolicitacaoResetSenha(BaseModel):
+    email: EmailStr
+    user_type: str = Field(..., pattern="^(cliente|funcionario)$")
+
+
+class ConfirmacaoResetSenha(BaseModel):
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=6, max_length=200)
+
+
