@@ -56,7 +56,7 @@ async def login(payload: LoginRequest):
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register_cliente(data: dict):
     try:
-        required = ["nome", "email", "senha"]
+        required = ["nome", "email", "senha", "telefone"]
         for field in required:
             if not data.get(field):
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Campo '{field}' é obrigatório")
@@ -78,7 +78,7 @@ async def register_cliente(data: dict):
             nome=data['nome'],
             email=data['email'],
             senha=hash_password(data['senha']),
-            telefone=data.get('telefone'),
+            telefone=data['telefone'],
         )
         cliente.save()
 
