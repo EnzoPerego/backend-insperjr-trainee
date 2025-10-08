@@ -1,0 +1,24 @@
+Gmail:
+MAIL_USERNAME=seu_email@gmail.com
+MAIL_PASSWORD=sua_senha_de_app
+MAIL_FROM=seu_email@gmail.com
+MAIL_PORT=587
+MAIL_SERVER=smtp.gmail.com
+
+Outlook/Hotmail:
+# MAIL_USERNAME=seu_email@outlook.com
+# MAIL_PASSWORD=sua_senha_de_app
+# MAIL_FROM=seu_email@outlook.com
+# MAIL_PORT=587
+# MAIL_SERVER=smtp-mail.outlook.com
+
+# Para Yahoo:
+# MAIL_USERNAME=seu_email@yahoo.com
+# MAIL_PASSWORD=sua_senha_de_app
+# MAIL_FROM=seu_email@yahoo.com
+# MAIL_PORT=587
+# MAIL_SERVER=smtp.mail.yahoo.com
+
+
+
+
