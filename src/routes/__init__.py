@@ -7,7 +7,7 @@ from .clientes import router as clientes_router
 from .auth import router as auth_router
 from .funcionarios import router as funcionarios_router
 from .pedidos import router as pedidos_router 
-
+from .motoboy import router as motoboy_router
 from .files import router as files_router
 
 
@@ -18,5 +18,6 @@ __all__ = [
     'auth_router',
     'funcionarios_router',
     'pedidos_router',
+    'motoboy_router',
     'files_router'
 ]

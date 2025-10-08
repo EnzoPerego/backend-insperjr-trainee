@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from src.routes import categorias_router, produtos_router, clientes_router, auth_router, funcionarios_router, pedidos_router,  files_router
+from src.routes import categorias_router, produtos_router, clientes_router, auth_router, funcionarios_router, pedidos_router, motoboy_router, files_router
 
 
 from fastapi.staticfiles import StaticFiles
@@ -57,7 +57,7 @@ app.include_router(auth_router)
 app.include_router(funcionarios_router)
 
 app.include_router(pedidos_router)
-
+app.include_router(motoboy_router)
 app.include_router(files_router)
 
 # Servir arquivos estáticos de uploads

@@ -35,7 +35,7 @@ class Cliente(Document):
     nome = StringField(required=True, max_length=200)
     email = EmailField(required=True, unique=True)
     senha = StringField(required=True, max_length=200)
-    telefone = StringField(max_length=20)
+    telefone = StringField(required=True, max_length=20)
     enderecos = ListField(EmbeddedDocumentField(Endereco), default=[])
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)

@@ -4,7 +4,7 @@ Rotas para gerenciamento de pedidos
 from decimal import Decimal, InvalidOperation
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status, Depends
 from mongoengine.errors import ValidationError
 from pymongo.errors import (
     ConnectionFailure,
@@ -23,6 +23,7 @@ from src.schemas.pedido_schemas import (
     PedidoStatusUpdate,
 )
 from src.utils.validators import validate_object_id
+from src.utils.dependencies import get_current_user, require_role, AuthenticatedUser
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 
@@ -145,9 +146,27 @@ async def add_pedido(payload: PedidoCreate):
 async def get_pedidos(
     status_filtro: Optional[str] = Query(None, description="Filtrar por status"),
     cliente_id: Optional[str] = Query(None, description="Filtrar por cliente"),
+    user: AuthenticatedUser = Depends(get_current_user)
 ):
-    """Listar pedidos"""
+    """Listar pedidos - Acesso para funcionários, admin, motoboys e clientes (apenas seus próprios pedidos)"""
     try:
+        # Se for cliente, só pode ver seus próprios pedidos
+        if user.user_type == "cliente":
+            if cliente_id and cliente_id != user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Você só pode visualizar seus próprios pedidos"
+                )
+            # Forçar cliente_id para o próprio usuário
+            cliente_id = user.id
+        
+        # Motoboys só podem ver pedidos prontos
+        if user.role == "motoboy" and status_filtro != "Pronto":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Motoboys só podem visualizar pedidos prontos"
+            )
+        
         query = {}
         if status_filtro:
             if status_filtro not in STATUS_CHOICES:
@@ -178,15 +197,76 @@ async def get_pedidos(
 
 
 @router.get("/{pedido_id}", response_model=PedidoResponse)
-async def get_pedido(pedido_id: str):
-    """Buscar pedido por ID"""
+async def get_pedido(
+    pedido_id: str,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """Buscar pedido por ID - Acesso para funcionários, admin e motoboys"""
     try:
+        # Verificar se usuário tem permissão
+        if user.user_type == "cliente":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Clientes não podem acessar esta rota"
+            )
+        
         oid = validate_object_id(pedido_id, "ID do pedido")
         pedido = Pedido.objects(id=oid).first()
         if not pedido:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Pedido não encontrado"
             )
+        
+        # Motoboys só podem ver pedidos prontos ou em entrega
+        if user.role == "motoboy" and pedido.status not in ["Pronto", "Saiu para entrega"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Motoboys só podem visualizar pedidos prontos ou em entrega"
+            )
+        
+        return pedido.to_dict()
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes.",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao buscar pedido: {str(e)}",
+        )
+
+
+@router.get("/cliente/{pedido_id}", response_model=PedidoResponse)
+async def get_pedido_cliente(
+    pedido_id: str,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """Buscar pedido por ID - Acesso para clientes (apenas seus próprios pedidos)"""
+    try:
+        # Verificar se usuário é cliente
+        if user.user_type != "cliente":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Apenas clientes podem acessar esta rota"
+            )
+        
+        oid = validate_object_id(pedido_id, "ID do pedido")
+        pedido = Pedido.objects(id=oid).first()
+        if not pedido:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Pedido não encontrado"
+            )
+        
+        # Verificar se o pedido pertence ao cliente
+        if str(pedido.cliente.id) != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você só pode visualizar seus próprios pedidos"
+            )
+        
         return pedido.to_dict()
     except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
         raise HTTPException(

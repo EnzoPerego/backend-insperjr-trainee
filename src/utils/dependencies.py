@@ -42,6 +42,15 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
     return AuthenticatedUser(id=str(user.id), user_type=user_type, role=role, instance=user)
 
 
+def require_motoboy(user: AuthenticatedUser = Depends(get_current_user)) -> AuthenticatedUser:
+    """Dependência para verificar se o usuário é motoboy"""
+    if user.role != "motoboy":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas motoboys podem acessar este recurso."
+        )
+    return user
+
 def require_role(*allowed_roles: List[str]) -> Callable:
     async def dependency(user: AuthenticatedUser = Depends(get_current_user)) -> AuthenticatedUser:
         if allowed_roles and user.role not in allowed_roles:

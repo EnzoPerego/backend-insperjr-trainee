@@ -22,7 +22,7 @@ class EnderecoResponse(EnderecoBase):
 class ClienteBase(BaseModel):
     nome: str = Field(..., min_length=1, max_length=200, description="Nome do cliente")
     email: EmailStr = Field(..., description="Email do cliente")
-    telefone: Optional[str] = Field(None, max_length=20, description="Telefone do cliente")
+    telefone: str = Field(..., min_length=10, max_length=20, description="Telefone do cliente")
     enderecos: List[EnderecoCreate] = Field(default=[], description="Lista de endereços")
 
 class ClienteCreate(ClienteBase):

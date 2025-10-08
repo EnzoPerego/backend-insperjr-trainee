@@ -1,7 +1,7 @@
 """
 Rotas para gerenciamento de clientes
 """
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from src.models.cliente import Cliente, Endereco
 from src.models.funcionario import Funcionario
@@ -27,7 +27,7 @@ async def add_cliente(cliente_data: dict):
     """Criar novo cliente"""
     try:
         # Validar campos obrigatórios
-        required_fields = ['nome', 'email', 'senha']
+        required_fields = ['nome', 'email', 'senha', 'telefone']
         for field in required_fields:
             if not cliente_data.get(field):
                 raise HTTPException(
@@ -61,7 +61,7 @@ async def add_cliente(cliente_data: dict):
             nome=cliente_data['nome'],
             email=cliente_data['email'],
             senha=hash_password(cliente_data['senha']),
-            telefone=cliente_data.get('telefone'),
+            telefone=cliente_data['telefone'],
             enderecos=enderecos
         )
         
@@ -76,9 +76,16 @@ async def add_cliente(cliente_data: dict):
         )
 
 @router.get("/{cliente_id}", response_model=dict)
-async def get_cliente(cliente_id: str):
-    """Buscar cliente por ID"""
+async def get_cliente(cliente_id: str, user: AuthenticatedUser = Depends(get_current_user)):
+    """Buscar cliente por ID - Acesso para funcionários, admin e clientes (apenas seus próprios dados)"""
     try:
+        # Se for cliente, só pode ver seus próprios dados
+        if user.user_type == "cliente" and str(user.id) != cliente_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você só pode visualizar seus próprios dados"
+            )
+        
         cliente = Cliente.objects(id=cliente_id).first()
         if not cliente:
             raise HTTPException(
@@ -95,9 +102,16 @@ async def get_cliente(cliente_id: str):
         )
 
 @router.put("/{cliente_id}", response_model=dict)
-async def update_cliente(cliente_id: str, cliente_data: dict):
-    """Atualizar cliente"""
+async def update_cliente(cliente_id: str, cliente_data: dict, user: AuthenticatedUser = Depends(get_current_user)):
+    """Atualizar cliente - Acesso para funcionários, admin e clientes (apenas seus próprios dados)"""
     try:
+        # Se for cliente, só pode atualizar seus próprios dados
+        if user.user_type == "cliente" and str(user.id) != cliente_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você só pode atualizar seus próprios dados"
+            )
+        
         cliente = Cliente.objects(id=cliente_id).first()
         if not cliente:
             raise HTTPException(
@@ -169,9 +183,16 @@ async def delete_cliente(cliente_id: str):
         )
 
 @router.post("/{cliente_id}/enderecos", response_model=dict)
-async def adicionar_endereco(cliente_id: str, endereco_data: dict):
-    """Adicionar endereço ao cliente"""
+async def adicionar_endereco(cliente_id: str, endereco_data: dict, user: AuthenticatedUser = Depends(get_current_user)):
+    """Adicionar endereço ao cliente - Acesso para funcionários, admin e clientes (apenas seus próprios dados)"""
     try:
+        # Se for cliente, só pode adicionar endereços aos seus próprios dados
+        if user.user_type == "cliente" and str(user.id) != cliente_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você só pode adicionar endereços aos seus próprios dados"
+            )
+        
         cliente = Cliente.objects(id=cliente_id).first()
         if not cliente:
             raise HTTPException(
@@ -212,9 +233,16 @@ async def adicionar_endereco(cliente_id: str, endereco_data: dict):
 
 
 @router.get("/{cliente_id}/enderecos", response_model=dict)
-async def listar_enderecos(cliente_id: str):
-    """Listar endereços de um cliente"""
+async def listar_enderecos(cliente_id: str, user: AuthenticatedUser = Depends(get_current_user)):
+    """Listar endereços de um cliente - Acesso para funcionários, admin e clientes (apenas seus próprios dados)"""
     try:
+        # Se for cliente, só pode ver seus próprios endereços
+        if user.user_type == "cliente" and str(user.id) != cliente_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você só pode visualizar seus próprios endereços"
+            )
+        
         cliente = Cliente.objects(id=cliente_id).first()
         if not cliente:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado")
@@ -226,9 +254,16 @@ async def listar_enderecos(cliente_id: str):
 
 
 @router.put("/{cliente_id}/enderecos/{endereco_id}", response_model=dict)
-async def atualizar_endereco(cliente_id: str, endereco_id: str, endereco_data: dict):
-    """Atualizar um endereço do cliente"""
+async def atualizar_endereco(cliente_id: str, endereco_id: str, endereco_data: dict, user: AuthenticatedUser = Depends(get_current_user)):
+    """Atualizar um endereço do cliente - Acesso para funcionários, admin e clientes (apenas seus próprios dados)"""
     try:
+        # Se for cliente, só pode atualizar seus próprios endereços
+        if user.user_type == "cliente" and str(user.id) != cliente_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você só pode atualizar seus próprios endereços"
+            )
+        
         cliente = Cliente.objects(id=cliente_id).first()
         if not cliente:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado")
@@ -255,9 +290,16 @@ async def atualizar_endereco(cliente_id: str, endereco_id: str, endereco_data: d
 
 
 @router.delete("/{cliente_id}/enderecos/{endereco_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def remover_endereco(cliente_id: str, endereco_id: str):
-    """Remover um endereço do cliente"""
+async def remover_endereco(cliente_id: str, endereco_id: str, user: AuthenticatedUser = Depends(get_current_user)):
+    """Remover um endereço do cliente - Acesso para funcionários, admin e clientes (apenas seus próprios dados)"""
     try:
+        # Se for cliente, só pode remover seus próprios endereços
+        if user.user_type == "cliente" and str(user.id) != cliente_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você só pode remover seus próprios endereços"
+            )
+        
         cliente = Cliente.objects(id=cliente_id).first()
         if not cliente:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado")

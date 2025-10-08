@@ -12,7 +12,7 @@ class Funcionario(Document):
     nome = StringField(required=True, max_length=200)
     email = EmailField(required=True, unique=True)
     senha = StringField(required=True, max_length=200)
-    status = StringField(required=True, choices=("funcionario", "admin"), default="funcionario")
+    status = StringField(required=True, choices=("funcionario", "admin", "motoboy"), default="funcionario")
     cpf = StringField(required=True, max_length=20)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
