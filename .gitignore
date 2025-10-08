@@ -221,5 +221,3 @@ __marimo__/
 
 # FastAPI
 .pytest_cache/
-
-/uploads/
