@@ -4,6 +4,10 @@ Aplicação principal do sistema de restaurante de delivery
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mongoengine import connect
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 from src.routes import categorias_router, produtos_router, clientes_router, auth_router, funcionarios_router, pedidos_router,  files_router
 

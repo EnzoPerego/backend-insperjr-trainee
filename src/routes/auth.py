@@ -3,11 +3,13 @@ Rotas de autenticação unificadas
 """
 from fastapi import APIRouter, HTTPException, status, Depends
 import traceback
+import os
 from src.schemas.auth_schemas import LoginRequest, TokenResponse, SolicitacaoResetSenha, ConfirmacaoResetSenha
 from src.models import Cliente, Funcionario, TokenResetSenha
 from src.utils.security import verify_password, hash_password
 from src.utils.jwt_utils import create_access_token
 from src.utils.dependencies import get_current_user, AuthenticatedUser
+from src.utils.email_service import email_service
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -118,7 +120,7 @@ async def me(user: AuthenticatedUser = Depends(get_current_user)):
 @router.post("/esqueci-senha")
 async def forgot_password(payload: SolicitacaoResetSenha):
     """
-    Solicita reset de senha: envia token por email (no caso seria a suposicao de um envio de email)
+    Solicita reset de senha: envia token por email real
     """
     try:
         # Verificar se o usuário existe
@@ -135,16 +137,22 @@ async def forgot_password(payload: SolicitacaoResetSenha):
         # criar token de reset
         reset_token = TokenResetSenha.create_token(payload.email, payload.user_type)
         
-        # por enquanto, decidi fazer uma simulacao (ja que nao sei como fazer por email): por isso em vez de enviar email, mostra o token no terminal
-        # print(f"\n{'='*60}")
-        print(f"TOKEN PARA ALTERAR SUA SENHA")
-        # print(f"{'='*60}")
-        print(f"Email: {payload.email}")
-        print(f"Tipo: {payload.user_type}")
-        print(f"Token: {reset_token.token}")
-        print(f"Expira em: {reset_token.expires_at}")
-        print(f"Link: http://localhost:5173/redefinir-senha?token={reset_token.token}")
-        # print(f"{'='*60}\n")
+        email_sent = await email_service.send_password_reset_email(
+            email=payload.email,
+            token=reset_token.token,
+            user_type=payload.user_type
+        )
+        
+        if email_sent:
+            print(f"Email de reset enviado com sucesso para: {payload.email}")
+        else:
+            print(f"Erro ao enviar email para: {payload.email}")
+            
+            print(f"mostra token no console se email falhar - Email: {payload.email}")
+            print(f"mostra token no console se email falhar - Token: {reset_token.token}")
+            
+            frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+            print(f"mostra token no console se email falhar - Link: {frontend_url}/redefinir-senha?token={reset_token.token}")
         
         return {"message": "Se o email estiver cadastrado, você receberá instruções para redefinir sua senha."}
         
