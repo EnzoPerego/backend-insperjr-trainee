@@ -133,6 +133,78 @@ async def add_produto(produto_data: ProdutoCreate):
             detail=f"Erro ao criar produto: {str(e)}"
         )
 
+@router.get("/estrelas-kaiserhaus", response_model=List[ProdutoResponse])
+async def listar_estrelas_kaiserhaus():
+    """Listar produtos que fazem parte das estrelas da Kaiserhaus"""
+    try:
+        produtos = Produto.objects(estrelas_kaiserhaus=True)
+        return [produto.to_dict() for produto in produtos]
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao listar estrelas da Kaiserhaus: {str(e)}"
+        )
+
+@router.get("/promocoes", response_model=List[ProdutoResponse])
+async def listar_promocoes():
+    """Listar produtos com preço promocional ativo"""
+    try:
+        # Filtra produtos ativos em que o campo existe, não é nulo e é > 0.00
+        produtos = (
+            Produto.objects(
+                status="Ativo",
+                preco_promocional__exists=True,
+                preco_promocional__ne=None,
+                preco_promocional__gt=Decimal("0.00"),
+            )
+            .order_by("-updated_at")
+        )
+        return [produto.to_dict() for produto in produtos]
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao listar promoções: {str(e)}"
+        )
+
+@router.get("/categoria/{categoria_id}", response_model=List[ProdutoResponse])
+async def listar_produtos_por_categoria(categoria_id: str):
+    """Listar produtos por categoria"""
+    try:
+        # Validar ObjectId
+        object_id = validate_object_id(categoria_id, "ID da categoria")
+        
+        categoria = Categoria.objects(id=object_id).first()
+        if not categoria:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Categoria não encontrada"
+            )
+        
+        produtos = Produto.objects(categoria=categoria)
+        return [produto.to_dict() for produto in produtos]
+    except HTTPException:
+        raise
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao listar produtos por categoria: {str(e)}"
+        )
+
 @router.get("/{produto_id}", response_model=ProdutoResponse)
 async def get_produto(produto_id: str):
     """Buscar produto por ID"""
@@ -280,48 +352,3 @@ async def delete_produto(produto_id: str):
             detail=f"Erro ao deletar produto: {str(e)}"
         )
 
-@router.get("/categoria/{categoria_id}", response_model=List[ProdutoResponse])
-async def listar_produtos_por_categoria(categoria_id: str):
-    """Listar produtos por categoria"""
-    try:
-        # Validar ObjectId
-        object_id = validate_object_id(categoria_id, "ID da categoria")
-        
-        categoria = Categoria.objects(id=object_id).first()
-        if not categoria:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Categoria não encontrada"
-            )
-        
-        produtos = Produto.objects(categoria=categoria)
-        return [produto.to_dict() for produto in produtos]
-    except HTTPException:
-        raise
-    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro ao listar produtos por categoria: {str(e)}"
-        )
-
-@router.get("/estrelas-kaiserhaus", response_model=List[ProdutoResponse])
-async def listar_estrelas_kaiserhaus():
-    """Listar produtos que fazem parte das estrelas da Kaiserhaus"""
-    try:
-        produtos = Produto.objects(estrelas_kaiserhaus=True)
-        return [produto.to_dict() for produto in produtos]
-    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Serviço de banco de dados temporariamente indisponível. Tente novamente em alguns instantes."
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro ao listar estrelas da Kaiserhaus: {str(e)}"
-        )
