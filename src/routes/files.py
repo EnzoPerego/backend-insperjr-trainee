@@ -3,7 +3,8 @@ Rotas para upload e gestão de arquivos (imagens)
 """
 import os
 import uuid
-from fastapi import APIRouter, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends
+from src.utils.dependencies import require_role, AuthenticatedUser
 
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -13,8 +14,9 @@ UPLOAD_DIR = os.path.abspath(UPLOAD_DIR)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-@router.post("/upload")
+@router.post("/upload", dependencies=[Depends(require_role("admin"))])
 async def upload_image(file: UploadFile = File(...)):
+    """Upload de imagens - Acesso apenas para admin"""
     try:
         if not file.content_type or not file.content_type.startswith("image/"):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Arquivo deve ser uma imagem")

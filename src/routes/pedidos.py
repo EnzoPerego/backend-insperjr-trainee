@@ -53,15 +53,32 @@ def para_decimal(value, field_label: str, allow_zero: bool = True) -> Decimal:
 
 
 @router.post("/", response_model=PedidoResponse, status_code=status.HTTP_201_CREATED)
-async def add_pedido(payload: PedidoCreate):
-    """Criar novo pedido"""
+async def add_pedido(
+    payload: PedidoCreate,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """Criar novo pedido - Acesso para clientes logados"""
     try:
+        # Verificar se usuário é cliente
+        if user.user_type != "cliente":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Apenas clientes podem criar pedidos"
+            )
+        
         cliente_id = validate_object_id(payload.cliente_id, "ID do cliente")
 
         cliente = Cliente.objects(id=cliente_id).first()
         if not cliente:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado"
+            )
+        
+        # Verificar se o cliente está criando pedido para si mesmo
+        if str(cliente.id) != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você só pode criar pedidos para si mesmo"
             )
 
         # Validar se o índice do endereço existe
@@ -283,9 +300,20 @@ async def get_pedido_cliente(
 
 
 @router.patch("/{pedido_id}/status", response_model=PedidoResponse)
-async def update_status_pedido(pedido_id: str, payload: PedidoStatusUpdate):
-    """Atualizar status do pedido e registrar no histórico"""
+async def update_status_pedido(
+    pedido_id: str, 
+    payload: PedidoStatusUpdate,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """Atualizar status do pedido e registrar no histórico - Acesso para admin, funcionários e motoboys"""
     try:
+        # Verificar se usuário tem permissão
+        if user.user_type == "cliente":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Clientes não podem atualizar status de pedidos"
+            )
+        
         pedido_oid = validate_object_id(pedido_id, "ID do pedido")
         func_oid = validate_object_id(payload.funcionario_id, "ID do funcionário")
 
@@ -330,9 +358,19 @@ async def update_status_pedido(pedido_id: str, payload: PedidoStatusUpdate):
 
 
 @router.get("/{pedido_id}/historico", response_model=List[PedidoHistoricoResponse])
-async def get_historico_status(pedido_id: str):
-    """Listar histórico de status de um pedido"""
+async def get_historico_status(
+    pedido_id: str,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """Listar histórico de status de um pedido - Acesso para admin, funcionários e motoboys"""
     try:
+        # Verificar se usuário tem permissão
+        if user.user_type == "cliente":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Clientes não podem visualizar histórico de pedidos"
+            )
+        
         pedido_oid = validate_object_id(pedido_id, "ID do pedido")
         historico = (
             PedidoHistoricoStatus.objects(pedido=pedido_oid).order_by("-data_hora")
