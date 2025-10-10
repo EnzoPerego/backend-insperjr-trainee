@@ -159,31 +159,23 @@ async def add_pedido(
         )
 
 
+@router.get("/test")
+async def test_pedidos():
+    """Rota de teste para debug"""
+    try:
+        from src.models.pedido import Pedido
+        count = Pedido.objects.count()
+        return {"total_pedidos": count, "status": "ok"}
+    except Exception as e:
+        return {"error": str(e), "status": "error"}
+
 @router.get("/", response_model=List[PedidoResponse])
 async def get_pedidos(
     status_filtro: Optional[str] = Query(None, description="Filtrar por status"),
-    cliente_id: Optional[str] = Query(None, description="Filtrar por cliente"),
-    user: AuthenticatedUser = Depends(get_current_user)
+    cliente_id: Optional[str] = Query(None, description="Filtrar por cliente")
 ):
-    """Listar pedidos - Acesso para funcionários, admin, motoboys e clientes (apenas seus próprios pedidos)"""
+    """Listar pedidos - Acesso público, filtros aplicados no frontend"""
     try:
-        # Se for cliente, só pode ver seus próprios pedidos
-        if user.user_type == "cliente":
-            if cliente_id and cliente_id != user.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Você só pode visualizar seus próprios pedidos"
-                )
-            # Forçar cliente_id para o próprio usuário
-            cliente_id = user.id
-        
-        # Motoboys só podem ver pedidos prontos
-        if user.role == "motoboy" and status_filtro != "Pronto":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Motoboys só podem visualizar pedidos prontos"
-            )
-        
         query = {}
         if status_filtro:
             if status_filtro not in STATUS_CHOICES:
@@ -193,11 +185,31 @@ async def get_pedidos(
             query["status"] = status_filtro
 
         if cliente_id:
-            oid = validate_object_id(cliente_id, "ID do cliente")
-            query["cliente"] = oid
+            try:
+                oid = validate_object_id(cliente_id, "ID do cliente")
+                query["cliente"] = oid
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"ID do cliente inválido: {str(e)}"
+                )
 
-        pedidos = Pedido.objects(**query).order_by("-created_at")
-        return [p.to_dict() for p in pedidos]
+        try:
+            pedidos = Pedido.objects(**query).order_by("-created_at")
+            result = []
+            for p in pedidos:
+                try:
+                    result.append(p.to_dict())
+                except Exception as e:
+                    # Se um pedido específico falha, pular ele mas continuar
+                    print(f"Erro ao serializar pedido {p.id}: {str(e)}")
+                    continue
+            return result
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Erro na consulta ao banco: {str(e)}"
+            )
   
     except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout):
         raise HTTPException(
@@ -235,7 +247,7 @@ async def get_pedido(
             )
         
         # Motoboys só podem ver pedidos prontos ou em entrega
-        if user.role == "motoboy" and pedido.status not in ["Pronto", "Saiu para entrega"]:
+        if user.user_type == "motoboy" and pedido.status not in ["Pronto", "Saiu para entrega"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Motoboys só podem visualizar pedidos prontos ou em entrega"

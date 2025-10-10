@@ -24,7 +24,7 @@ class PedidoItem(EmbeddedDocument):
         return {
             "produto": {
                 "id": str(self.produto.id),
-                "titulo": self.produto.titulo
+                "titulo": getattr(self.produto, 'titulo', 'Produto não encontrado')
             } if self.produto else None,
             "quantidade": self.quantidade,
             "preco_unitario": float(self.preco_unitario),
@@ -59,13 +59,13 @@ class Pedido(Document):
             "id": str(self.id),
             "cliente": {
                 "id": str(self.cliente.id),
-                "nome": self.cliente.nome
+                "nome": getattr(self.cliente, 'nome', 'Cliente não encontrado')
             } if self.cliente else None,
             "endereco": {
-                "rua": self.endereco.rua,
-                "numero": self.endereco.numero,
-                "bairro": self.endereco.bairro,
-                "cidade": self.endereco.cidade
+                "rua": getattr(self.endereco, 'rua', ''),
+                "numero": getattr(self.endereco, 'numero', ''),
+                "bairro": getattr(self.endereco, 'bairro', ''),
+                "cidade": getattr(self.endereco, 'cidade', '')
             } if self.endereco else None,
             "itens": [i.to_dict() for i in self.itens],
             "status": self.status,
