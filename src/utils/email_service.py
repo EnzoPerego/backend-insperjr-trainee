@@ -83,7 +83,8 @@ class EmailService:
         email: str,
         nome: str,
         senha_temporaria: str,
-        role: str
+        role: str,
+        reset_token: str = None
     ) -> bool:
         """
         Envia email de boas-vindas para novo funcionário com senha temporária
@@ -96,13 +97,15 @@ class EmailService:
             # URL para login e redefinição
             frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
             login_url = f"{frontend_url}/login"
+            reset_url = f"{frontend_url}/redefinir-senha?token={reset_token}" if reset_token else ""
             
             html_body = self._criar_template_email_registro(
                 email=email,
                 nome=nome,
                 senha_temporaria=senha_temporaria,
                 role=role,
-                login_url=login_url
+                login_url=login_url,
+                reset_url=reset_url
             )
             
             text_body = self._criar_texto_email_registro(
@@ -110,7 +113,8 @@ class EmailService:
                 nome=nome,
                 senha_temporaria=senha_temporaria,
                 role=role,
-                login_url=login_url
+                login_url=login_url,
+                reset_url=reset_url
             )
             
             message = MessageSchema(
@@ -201,7 +205,8 @@ class EmailService:
         nome: str,
         senha_temporaria: str,
         role: str,
-        login_url: str
+        login_url: str,
+        reset_url: str = ""
     ) -> str:
         """Cria template HTML para email de boas-vindas"""
         template = self._load_template("email_de_registro.html")
@@ -217,6 +222,7 @@ class EmailService:
         template = template.replace("{{ role }}", role_pt)
         template = template.replace("{{ senha_temporaria }}", senha_temporaria)
         template = template.replace("{{ login_url }}", login_url)
+        template = template.replace("{{ reset_url }}", reset_url)
         template = template.replace("{{ datetime }}", self._get_current_time())
         
         return template
@@ -227,7 +233,8 @@ class EmailService:
         nome: str,
         senha_temporaria: str,
         role: str,
-        login_url: str
+        login_url: str,
+        reset_url: str = ""
     ) -> str:
         """Cria versão em texto simples do email de boas-vindas"""
         role_pt = {
@@ -235,6 +242,8 @@ class EmailService:
             'motoboy': 'Motoboy',
             'funcionario': 'Funcionário'
         }.get(role, 'Funcionário')
+        
+        reset_section = f"\n\nOU REDEFINA SUA SENHA AGORA:\n{reset_url}\n" if reset_url else ""
         
         return f"""
         KAISERHAUS - Bem-vindo à Equipe
@@ -257,8 +266,7 @@ class EmailService:
         
         COMO ACESSAR:
         1. Acesse: {login_url}
-        2. Faça login com suas credenciais
-        3. Vá em "Esqueci minha senha" para definir uma nova senha
+        2. Faça login com suas credenciais{reset_section}
         
         IMPORTANTE:
         - Guarde suas credenciais em local seguro

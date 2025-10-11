@@ -3,7 +3,7 @@ Rotas de funcionários (restritas a admin para criação e listagem)
 """
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
-from src.models import Funcionario
+from src.models import Funcionario, TokenResetSenha
 from src.utils.security import hash_password
 from src.utils.validators import validate_cpf_format, validate_object_id
 from src.utils.dependencies import require_role
@@ -48,12 +48,16 @@ async def create_funcionario(data: dict):
         )
         funcionario.save()
         
+        # Criar token de reset para incluir no email (opcional para o funcionário)
+        reset_token = TokenResetSenha.create_token(funcionario.email, "funcionario")
+        
         # email de boas vindasm, que vai ter a senhado usuario
         email_sent = await email_service.enviar_email_registro(
             email=funcionario.email,
             nome=funcionario.nome,
             senha_temporaria=senha_temporaria,
-            role=role
+            role=role,
+            reset_token=reset_token.token
         )
         
         if email_sent:
