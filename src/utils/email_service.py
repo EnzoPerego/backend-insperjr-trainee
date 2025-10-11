@@ -78,6 +78,57 @@ class EmailService:
             logger.error(f"Erro ao enviar email de reset para {email}: {str(e)}")
             return False
     
+    async def enviar_email_registro(
+        self,
+        email: str,
+        nome: str,
+        senha_temporaria: str,
+        role: str
+    ) -> bool:
+        """
+        Envia email de boas-vindas para novo funcionário com senha temporária
+
+        
+        """
+        try:
+            subject = "Bem-vindo ao Kaiserhaus - Sua Conta Foi Criada"
+            
+            # URL para login e redefinição
+            frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+            login_url = f"{frontend_url}/login"
+            
+            html_body = self._criar_template_email_registro(
+                email=email,
+                nome=nome,
+                senha_temporaria=senha_temporaria,
+                role=role,
+                login_url=login_url
+            )
+            
+            text_body = self._criar_texto_email_registro(
+                email=email,
+                nome=nome,
+                senha_temporaria=senha_temporaria,
+                role=role,
+                login_url=login_url
+            )
+            
+            message = MessageSchema(
+                subject=subject,
+                recipients=[email],
+                body=html_body,
+                subtype="html"
+            )
+            
+            await self.fastmail.send_message(message)
+            
+            logger.info(f"Email de boas-vindas enviado com sucesso para: {email}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erro ao enviar email de boas-vindas para {email}: {str(e)}")
+            return False
+    
     def _get_current_time(self) -> str:
         # data formatada
         now = datetime.now()
@@ -136,6 +187,83 @@ class EmailService:
         - O link pode ser usado apenas uma vez
         - Se você não solicitou esta alteração, ignore este email
         - Nunca compartilhe este link com outras pessoas
+        
+        Este é um email automático, não responda.
+        
+        KAISERHAUS
+        © 2024 Kaiserhaus - Todos os direitos reservados
+        Há mais de 40 anos em São Paulo
+        """
+    
+    def _criar_template_email_registro(
+        self,
+        email: str,
+        nome: str,
+        senha_temporaria: str,
+        role: str,
+        login_url: str
+    ) -> str:
+        """Cria template HTML para email de boas-vindas"""
+        template = self._load_template("email_de_registro.html")
+        
+        role_pt = {
+            'admin': 'Administrador',
+            'motoboy': 'Motoboy',
+            'funcionario': 'Funcionário'
+        }.get(role, 'Funcionário')
+        
+        template = template.replace("{{ nome }}", nome)
+        template = template.replace("{{ email }}", email)
+        template = template.replace("{{ role }}", role_pt)
+        template = template.replace("{{ senha_temporaria }}", senha_temporaria)
+        template = template.replace("{{ login_url }}", login_url)
+        template = template.replace("{{ datetime }}", self._get_current_time())
+        
+        return template
+    
+    def _criar_texto_email_registro(
+        self,
+        email: str,
+        nome: str,
+        senha_temporaria: str,
+        role: str,
+        login_url: str
+    ) -> str:
+        """Cria versão em texto simples do email de boas-vindas"""
+        role_pt = {
+            'admin': 'Administrador',
+            'motoboy': 'Motoboy',
+            'funcionario': 'Funcionário'
+        }.get(role, 'Funcionário')
+        
+        return f"""
+        KAISERHAUS - Bem-vindo à Equipe
+        
+        Olá, {nome}!
+        
+        Sua conta foi criada com sucesso no sistema Kaiserhaus.
+        
+        INFORMAÇÕES DA SUA CONTA:
+        Nome: {nome}
+        Email: {email}
+        Cargo: {role_pt}
+        Data de criação: {self._get_current_time()}
+        
+        CREDENCIAIS DE ACESSO:
+        Email: {email}
+        Senha Temporária: {senha_temporaria}
+        
+        Para sua segurança, recomendamos que você altere sua senha no primeiro acesso.
+        
+        COMO ACESSAR:
+        1. Acesse: {login_url}
+        2. Faça login com suas credenciais
+        3. Vá em "Esqueci minha senha" para definir uma nova senha
+        
+        IMPORTANTE:
+        - Guarde suas credenciais em local seguro
+        - Não compartilhe sua senha com ninguém
+        - Recomendamos alterar a senha temporária no primeiro acesso
         
         Este é um email automático, não responda.
         

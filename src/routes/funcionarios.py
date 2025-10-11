@@ -7,6 +7,7 @@ from src.models import Funcionario
 from src.utils.security import hash_password
 from src.utils.validators import validate_cpf_format, validate_object_id
 from src.utils.dependencies import require_role
+from src.utils.email_service import email_service
 
 
 router = APIRouter(prefix="/funcionarios", tags=["funcionarios"])
@@ -34,14 +35,33 @@ async def create_funcionario(data: dict):
         if Funcionario.objects(email=data['email']).first():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email já cadastrado")
 
+
+        senha_temporaria = data['senha']
+        role = data.get('status') or 'funcionario'
+
         funcionario = Funcionario(
             nome=data['nome'],
             email=data['email'],
-            senha=hash_password(data['senha']),
+            senha=hash_password(senha_temporaria),
             cpf=data['cpf'],
-            status=data.get('status') or 'funcionario'
+            status=role
         )
         funcionario.save()
+        
+        # email de boas vindasm, que vai ter a senhado usuario
+        email_sent = await email_service.enviar_email_registro(
+            email=funcionario.email,
+            nome=funcionario.nome,
+            senha_temporaria=senha_temporaria,
+            role=role
+        )
+        
+        if email_sent:
+            print(f"Email de boas-vindas enviado com sucesso para: {funcionario.email}")
+        else:
+            print(f"Erro ao enviar email de boas-vindas para: {funcionario.email}")
+            print(f"   Senha temporária: {senha_temporaria}")
+        
         return funcionario.to_dict_safe()
     except HTTPException:
         raise

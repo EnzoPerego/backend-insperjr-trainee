@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bem-vindo ao Kaiserhaus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+ 
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f7efdf 0%, #f5efe4 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 550px;
+            margin: 0 auto;
+            padding: 20px;
+            background: transparent;
+        }
+        
+
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #5C1F0C;
+            background: linear-gradient(135deg, rgba(92, 31, 12, 0.05) 0%, rgba(92, 31, 12, 0.02) 100%);
+            border-radius: 12px;
+        }
+        
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: #5C1F0C !important;
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+        }
+        
+  
+        .content {
+            margin-bottom: 40px;
+        }
+        
+        .greeting {
+            font-size: 22px;
+            font-weight: 700;
+            color: #5C1F0C !important;
+            margin-bottom: 16px;
+        }
+        
+        .message {
+            font-size: 15px;
+            color: #4a5568;
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+        
+        .highlight {
+            background: linear-gradient(135deg, rgba(92, 31, 12, 0.08) 0%, rgba(92, 31, 12, 0.03) 100%);
+            border: 1px solid #9B3A1A;
+            border-radius: 10px;
+            padding: 24px;
+            margin: 32px 0;
+        }
+        
+        .highlight-title {
+            font-weight: 700;
+            color: #5C1F0C !important;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        
+        .highlight-item {
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #4a5568;
+        }
+        
+        .credentials-box {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border: 2px solid #10b981;
+            border-radius: 10px;
+            padding: 24px;
+            margin: 32px 0;
+        }
+        
+        .credentials-title {
+            font-weight: 700;
+            color: #047857;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        
+        .credentials-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #065f46;
+        }
+        
+        .password-display {
+            background: white;
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            color: #047857;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #5C1F0C 0%, #792810 100%);
+            color: white !important;
+            padding: 16px 32px;
+            text-decoration: none !important;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            text-align: center;
+            margin: 0 auto;
+            box-shadow: 0 4px 16px rgba(92, 31, 12, 0.3);
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+            border: none;
+            min-width: 240px;
+            max-width: 100%;
+        }
+        
+        .button:hover {
+            background: linear-gradient(135deg, #792810 0%, #9B3A1A 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(92, 31, 12, 0.4);
+            color: white !important;
+        }
+        
+        .button:visited {
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+            -webkit-text-stroke: 0px white !important;
+        }
+        
+        .button:active {
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+            -webkit-text-stroke: 0px white !important;
+        }
+        
+        .button:focus {
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+            -webkit-text-stroke: 0px white !important;
+        }
+        
+        .warning {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border: 1px solid #3b82f6;
+            border-radius: 10px;
+            padding: 24px;
+            margin: 32px 0;
+        }
+        
+        .warning-title {
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        
+        .warning-list {
+            margin: 0;
+            padding-left: 18px;
+            color: #1e3a8a;
+            font-size: 14px;
+        }
+        
+        .warning-list li {
+            margin-bottom: 6px;
+            line-height: 1.5;
+        }
+        
+        .footer {
+            text-align: center;
+            color: #6b7280;
+            font-size: 13px;
+            border-top: 1px solid #d1d5db;
+            padding-top: 32px;
+            margin-top: 48px;
+            background: linear-gradient(135deg, rgba(92, 31, 12, 0.03) 0%, rgba(92, 31, 12, 0.01) 100%);
+            border-radius: 8px;
+            padding: 32px 20px;
+        }
+        
+        .footer-brand {
+            font-weight: 700;
+            color: #5C1F0C !important;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .footer-text {
+            color: #6b7280;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, #9B3A1A 50%, transparent 100%);
+            margin: 32px 0;
+        }
+        
+    
+        @media (min-width: 768px) {
+            body {
+                padding: 40px 20px;
+            }
+            
+            .container {
+                max-width: 600px;
+                padding: 40px;
+            }
+            
+            .header {
+                padding: 50px 40px;
+                margin-bottom: 50px;
+            }
+            
+            .logo {
+                font-size: 38px !important;
+                color: #5C1F0C !important;
+            }
+            
+            .greeting {
+                font-size: 26px !important;
+                color: #5C1F0C !important;
+            }
+            
+            .message {
+                font-size: 16px !important;
+            }
+            
+            .button {
+                font-size: 17px !important;
+                padding: 18px 36px !important;
+                min-width: 280px !important;
+                background: linear-gradient(135deg, #5C1F0C 0%, #792810 100%) !important;
+                background-color: #5C1F0C !important;
+            }
+            
+            .highlight {
+                padding: 28px !important;
+                margin: 36px 0 !important;
+            }
+            
+            .highlight-title {
+                font-size: 17px !important;
+                color: #5C1F0C !important;
+            }
+            
+            .highlight-item {
+                font-size: 15px !important;
+            }
+            
+            .credentials-box {
+                padding: 28px !important;
+                margin: 36px 0 !important;
+            }
+            
+            .credentials-title {
+                font-size: 17px !important;
+            }
+            
+            .credentials-item {
+                font-size: 15px !important;
+            }
+            
+            .password-display {
+                font-size: 20px !important;
+            }
+            
+            .warning {
+                padding: 28px !important;
+                margin: 36px 0 !important;
+            }
+            
+            .warning-title {
+                font-size: 17px !important;
+            }
+            
+            .warning-list {
+                font-size: 15px !important;
+            }
+            
+            .footer {
+                padding: 40px 30px !important;
+                margin-top: 56px !important;
+            }
+            
+            .footer-brand {
+                font-size: 15px !important;
+                color: #5C1F0C !important;
+            }
+            
+            .footer-text {
+                font-size: 13px !important;
+            }
+        }
+        
+        /* responsividade */
+        @media (max-width: 480px) {
+            .container {
+                padding: 16px;
+            }
+            
+            .header {
+                padding: 32px 20px;
+                margin-bottom: 32px;
+            }
+            
+            .logo {
+                font-size: 28px !important;
+                color: #5C1F0C !important;
+            }
+            
+            .greeting {
+                font-size: 20px !important;
+                color: #5C1F0C !important;
+            }
+            
+            .message {
+                font-size: 14px !important;
+            }
+            
+            .button {
+                font-size: 15px !important;
+                padding: 14px 28px !important;
+                min-width: 200px !important;
+                background: linear-gradient(135deg, #5C1F0C 0%, #792810 100%) !important;
+                background-color: #5C1F0C !important;
+            }
+            
+            .highlight {
+                padding: 20px !important;
+                margin: 24px 0 !important;
+            }
+            
+            .highlight-title {
+                color: #5C1F0C !important;
+            }
+            
+            .credentials-box {
+                padding: 20px !important;
+                margin: 24px 0 !important;
+            }
+            
+            .password-display {
+                font-size: 16px !important;
+            }
+            
+            .warning {
+                padding: 20px !important;
+                margin: 24px 0 !important;
+            }
+            
+            .footer {
+                padding: 24px 16px !important;
+            }
+            
+            .footer-brand {
+                color: #5C1F0C !important;
+            }
+        }
+        
+        .button[style] {
+            background: #5C1F0C !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo" style="color: #5C1F0C !important;">KAISERHAUS</div>
+        </div>
+        
+        <div class="content">
+            <div class="greeting" style="color: #5C1F0C !important;">Bem-vindo, {{ nome }}!</div>
+            <div class="message">
+                Sua conta foi criada com sucesso no sistema <strong style="color: #5C1F0C;">Kaiserhaus</strong>. 
+                Estamos felizes em tê-lo em nossa equipe!
+            </div>
+            
+            <div class="highlight">
+                <div class="highlight-title" style="color: #5C1F0C !important;">Informações da Sua Conta</div>
+                <div class="highlight-item"><strong>Nome:</strong> {{ nome }}</div>
+                <div class="highlight-item"><strong>Email:</strong> {{ email }}</div>
+                <div class="highlight-item"><strong>Cargo:</strong> {{ role }}</div>
+                <div class="highlight-item"><strong>Data de criação:</strong> {{ datetime }}</div>
+            </div>
+            
+            <div class="credentials-box">
+                <div class="credentials-title">Credenciais de Acesso</div>
+                <div class="credentials-item"><strong>Email:</strong> {{ email }}</div>
+                <div class="credentials-item"><strong>Senha Temporária:</strong></div>
+                <div class="password-display">{{ senha_temporaria }}</div>
+                <div class="message" style="margin-top: 16px; margin-bottom: 0; font-size: 13px; color: #065f46;">
+                    Por favor, guarde esta senha em local seguro. Recomendamos fortemente que você altere sua senha no primeiro acesso.
+                </div>
+            </div>
+            
+            <div class="button-container">
+                <a href="{{ login_url }}" class="button" style="background-color: #5C1F0C !important; background: #5C1F0C !important; color: white !important; padding: 16px 32px; text-decoration: none !important; border-radius: 10px; font-weight: 700; font-size: 16px; text-align: center; margin: 0 auto; border: none; display: inline-block; min-width: 240px; max-width: 100%; box-sizing: border-box; -webkit-text-fill-color: white !important; -webkit-text-stroke: 0px white !important;">Fazer Login</a>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="warning">
+                <div class="warning-title">Como Alterar Sua Senha</div>
+                <ul class="warning-list">
+                    <li>Acesse a página de login</li>
+                    <li>Clique em <strong>"Esqueci minha senha"</strong></li>
+                    <li>Digite seu email e siga as instruções</li>
+                    <li>Defina uma senha forte e pessoal</li>
+                </ul>
+            </div>
+            
+            <div class="warning">
+                <div class="warning-title">Importante</div>
+                <ul class="warning-list">
+                    <li>Guarde suas credenciais em <strong>local seguro</strong></li>
+                    <li>Não compartilhe sua senha com <strong>ninguém</strong></li>
+                    <li>Altere a senha temporária no <strong>primeiro acesso</strong></li>
+                    <li>Se tiver dúvidas, entre em contato com o administrador</li>
+                </ul>
+            </div>
+            
+        </div>
+        
+        <div class="footer">
+            <div class="footer-brand" style="color: #5C1F0C !important;">KAISERHAUS</div>
+            <div class="footer-text">Este é um email automático, não responda.</div>
+            <div class="footer-text">© 2024 Kaiserhaus - Todos os direitos reservados</div>
+            <div class="footer-text">Há mais de 40 anos em São Paulo</div>
+        </div>
+    </div>
+</body>
+</html>
+
