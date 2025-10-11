@@ -118,44 +118,58 @@ async def me(user: AuthenticatedUser = Depends(get_current_user)):
 
 
 @router.post("/esqueci-senha")
-async def forgot_password(payload: SolicitacaoResetSenha):
+async def forgot_password(payload: dict):
     """
     Solicita reset de senha: envia token por email real
+    Identifica automaticamente o tipo de usuário (cliente ou funcionário)
     """
     try:
-        # Verificar se o usuário existe
+        email = payload.get('email')
+        if not email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email é obrigatório")
+        
+        # Buscar o usuário em ambas as collections
         user = None
-        if payload.user_type == "cliente":
-            user = Cliente.objects(email=payload.email).first()
+        user_type = None
+        
+        # Primeiro tenta como cliente
+        user = Cliente.objects(email=email).first()
+        if user:
+            user_type = "cliente"
         else:
-            user = Funcionario.objects(email=payload.email).first()
+            # Se não encontrou como cliente, tenta como funcionário
+            user = Funcionario.objects(email=email).first()
+            if user:
+                user_type = "funcionario"
         
         if not user:
-            # aqui não revela se o email existe ou não
+            # Não revela se o email existe ou não
             return {"message": "Se o email estiver cadastrado, você receberá instruções para redefinir sua senha."}
         
-        # criar token de reset
-        reset_token = TokenResetSenha.create_token(payload.email, payload.user_type)
+        # Criar token de reset com o tipo identificado
+        reset_token = TokenResetSenha.create_token(email, user_type)
         
         email_sent = await email_service.send_password_reset_email(
-            email=payload.email,
+            email=email,
             token=reset_token.token,
-            user_type=payload.user_type
+            user_type=user_type
         )
         
         if email_sent:
-            print(f"Email de reset enviado com sucesso para: {payload.email}")
+            print(f"Email de reset enviado com sucesso para: {email} (tipo: {user_type})")
         else:
-            print(f"Erro ao enviar email para: {payload.email}")
-            
-            print(f"mostra token no console se email falhar - Email: {payload.email}")
-            print(f"mostra token no console se email falhar - Token: {reset_token.token}")
+            print(f" Erro ao enviar email para: {email}")
+            print(f"TOKEN FALLBACK - Email: {email}")
+            print(f"TOKEN FALLBACK - Token: {reset_token.token}")
+            print(f"TOKEN FALLBACK - Tipo: {user_type}")
             
             frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-            print(f"mostra token no console se email falhar - Link: {frontend_url}/redefinir-senha?token={reset_token.token}")
+            print(f"TOKEN FALLBACK - Link: {frontend_url}/redefinir-senha?token={reset_token.token}")
         
         return {"message": "Se o email estiver cadastrado, você receberá instruções para redefinir sua senha."}
         
+    except HTTPException:
+        raise
     except Exception as e:
         print("[FORGOT PASSWORD] Exception: \n" + traceback.format_exc())
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao solicitar reset: {str(e)}")
