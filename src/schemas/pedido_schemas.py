@@ -10,8 +10,8 @@ class PedidoCreate(BaseModel):
     endereco_index: int = Field(..., ge=0, description="Índice do endereço na lista de endereços do cliente")
     itens: List[PedidoItemCreate]
 
-    
     metodo_pagamento: Optional[str] = Field(None, max_length=30)
+    metodo_entrega: Optional[str] = Field('delivery', description="Método de entrega: 'delivery' ou 'pickup'")
     observacoes: Optional[str] = None
     taxa_entrega: float = 0.0
     desconto: float = 0.0
@@ -50,6 +50,7 @@ class PedidoResponse(BaseModel):
     data_hora: Optional[str]
 
     metodo_pagamento: Optional[str] = None
+    metodo_entrega: Optional[str] = None
     observacoes: Optional[str] = None
     subtotal: float
     taxa_entrega: float

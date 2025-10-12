@@ -132,6 +132,7 @@ async def add_pedido(
             itens=itens_doc,
             status="Pendente",
             metodo_pagamento=payload.metodo_pagamento,
+            metodo_entrega=payload.metodo_entrega or 'delivery',
             observacoes=payload.observacoes,
             subtotal=subtotal,
             taxa_entrega=taxa_entrega,

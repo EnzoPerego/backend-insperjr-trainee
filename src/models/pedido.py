@@ -40,6 +40,7 @@ class Pedido(Document):
 
    #metodo de pagamento nao tem no nosso diagrama, mas resolvi adicionar
     metodo_pagamento = StringField(max_length=30, null=True)
+    metodo_entrega = StringField(max_length=20, choices=['delivery', 'pickup'], default='delivery')
     observacoes = StringField(null=True)
 
     subtotal = DecimalField(precision=2, default=Decimal("0.00"))
@@ -71,6 +72,7 @@ class Pedido(Document):
             "status": self.status,
             "data_hora": self.data_hora.isoformat() if self.data_hora else None,
             "metodo_pagamento": self.metodo_pagamento,
+            "metodo_entrega": self.metodo_entrega,
             "observacoes": self.observacoes,
             "subtotal": float(self.subtotal or 0),
             "taxa_entrega": float(self.taxa_entrega or 0),
