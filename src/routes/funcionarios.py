@@ -6,7 +6,7 @@ from typing import List
 from src.models import Funcionario, TokenResetSenha
 from src.utils.security import hash_password
 from src.utils.validators import validate_cpf_format, validate_object_id
-from src.utils.dependencies import require_role
+from src.utils.dependencies import require_role, get_current_user, AuthenticatedUser
 from src.utils.email_service import email_service
 
 
@@ -71,6 +71,64 @@ async def create_funcionario(data: dict):
         raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao criar funcionário: {str(e)}")
+
+
+@router.get("/{funcionario_id}", response_model=dict)
+async def get_funcionario(funcionario_id: str, user: AuthenticatedUser = Depends(get_current_user)):
+    """buscar funcionário por idd pois antes nao tinha essa rota, e sera necessaaria para cada um ter seu perfil"""
+    try:
+        # Se não for admin, só pode ver seus próprios dados
+        if user.user_type != "admin" and str(user.id) != funcionario_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você só pode visualizar seus próprios dados"
+            )
+        
+        object_id = validate_object_id(funcionario_id, "ID do funcionário")
+        funcionario = Funcionario.objects(id=object_id).first()
+        if not funcionario:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Funcionário não encontrado"
+            )
+        return funcionario.to_dict_safe()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao buscar funcionário: {str(e)}")
+
+
+@router.put("/{funcionario_id}", response_model=dict)
+async def update_funcionario(funcionario_id: str, data: dict, user: AuthenticatedUser = Depends(get_current_user)):
+    try:
+        #se não for admin, só pode editar seus próprios dados
+        if user.user_type != "admin" and str(user.id) != funcionario_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você só pode editar seus próprios dados"
+            )
+        
+        object_id = validate_object_id(funcionario_id, "ID do funcionário")
+        funcionario = Funcionario.objects(id=object_id).first()
+        if not funcionario:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Funcionário não encontrado"
+            )
+        
+        if 'nome' in data:
+            funcionario.nome = data['nome']
+        if 'email' in data:
+            funcionario.email = data['email']
+        if 'telefone' in data:
+            funcionario.telefone = data['telefone']
+        
+        funcionario.save()
+        return funcionario.to_dict_safe()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao atualizar funcionário: {str(e)}")
 
 
 @router.delete("/{funcionario_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_role("admin"))])
