@@ -38,7 +38,8 @@ def validar_codigo_entrega(codigo: str, telefone_cliente: str) -> bool:
 async def listar_pedidos_prontos(user: AuthenticatedUser = Depends(require_motoboy)):
     """Listar pedidos prontos para entrega"""
     try:
-        pedidos = Pedido.objects(status="Pronto").order_by("-created_at")
+      
+        pedidos = Pedido.objects(status__in=["Pronto", "Saiu para entrega"]).order_by("-created_at")
         
         resultado = []
         for pedido in pedidos:
@@ -48,8 +49,15 @@ async def listar_pedidos_prontos(user: AuthenticatedUser = Depends(require_motob
             # Formatar itens do pedido
             itens_formatados = []
             for item in pedido.itens:
+                try:
+                    
+                    produto_nome = item.produto.titulo if item.produto else "Produto não encontrado"
+                except Exception:
+                    
+                    produto_nome = "Produto não encontrado"
+                
                 itens_formatados.append({
-                    "produto": item.produto.titulo if item.produto else "Produto não encontrado",
+                    "produto": produto_nome,
                     "quantidade": item.quantidade
                 })
             
@@ -69,7 +77,8 @@ async def listar_pedidos_prontos(user: AuthenticatedUser = Depends(require_motob
                 "total": float(pedido.total or 0),
                 "data": pedido.data_hora.strftime("%d/%m/%Y %H:%M") if pedido.data_hora else "",
                 "itens": itens_formatados,
-                "observacoes": pedido.observacoes
+                "observacoes": pedido.observacoes,
+                "status": pedido.status
             })
         
         return resultado
@@ -101,15 +110,17 @@ async def aceitar_pedido(
                 detail="Pedido não encontrado"
             )
         
-        if pedido.status != "Pronto":
+     
+        if pedido.status not in ["Pronto", "Saiu para entrega"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Pedido não está pronto para entrega"
+                detail="Pedido não está disponível para entrega"
             )
         
-        # Atualizar status para "Saiu para entrega"
-        pedido.status = "Saiu para entrega"
-        pedido.save()
+        # atualizar status para "Saiu para entrega" apenas se ainda estiver "Pronto"
+        if pedido.status == "Pronto":
+            pedido.status = "Saiu para entrega"
+            pedido.save()
         
         return {
             "message": "Pedido aceito com sucesso",
@@ -146,10 +157,11 @@ async def ver_pedido_entrega(
                 detail="Pedido não encontrado"
             )
         
-        if pedido.status != "Saiu para entrega":
+    
+        if pedido.status not in ["Pronto", "Saiu para entrega"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Pedido não está em entrega"
+                detail="Pedido não está disponível para entrega"
             )
         
         # Gerar número do pedido baseado no ID
@@ -158,8 +170,15 @@ async def ver_pedido_entrega(
         # Formatar itens do pedido
         itens_formatados = []
         for item in pedido.itens:
+            try:
+                
+                produto_nome = item.produto.titulo if item.produto else "Produto não encontrado"
+            except Exception:
+                
+                produto_nome = "Produto não encontrado"
+            
             itens_formatados.append({
-                "produto": item.produto.titulo if item.produto else "Produto não encontrado",
+                "produto": produto_nome,
                 "quantidade": item.quantidade,
                 "preco": float(item.preco_unitario or 0)
             })
@@ -212,10 +231,11 @@ async def confirmar_entrega(
                 detail="Pedido não encontrado"
             )
         
+        # so vai pode confirmar entrega se status for "Saiu para entrega"
         if pedido.status != "Saiu para entrega":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Pedido não está em entrega"
+                detail="Pedido não está em rota de entrega"
             )
         
         # Validar código de verificação

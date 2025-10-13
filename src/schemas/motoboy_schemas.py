@@ -14,6 +14,7 @@ class PedidoProntoResponse(BaseModel):
     data: str
     itens: List[dict]
     observacoes: Optional[str] = None
+    status: str
 
 class AceitarPedidoRequest(BaseModel):
     """Request para aceitar pedido"""

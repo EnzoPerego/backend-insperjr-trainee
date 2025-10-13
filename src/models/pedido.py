@@ -21,14 +21,36 @@ class PedidoItem(EmbeddedDocument):
     preco_unitario = DecimalField(required=True, precision=2)
 
     def to_dict(self):
-        return {
-            "produto": {
-                "id": str(self.produto.id),
-                "titulo": getattr(self.produto, 'titulo', 'Produto não encontrado')
-            } if self.produto else None,
-            "quantidade": self.quantidade,
-            "preco_unitario": float(self.preco_unitario),
-        }
+        try:
+            produto_data = None
+            if self.produto:
+                try:
+                    produto_data = {
+                        "id": str(self.produto.id),
+                        "titulo": getattr(self.produto, 'titulo', 'Produto não encontrado')
+                    }
+                except Exception:
+
+                    produto_data = {
+                        "id": "produto_deletado",
+                        "titulo": "Produto não encontrado"
+                    }
+            
+            return {
+                "produto": produto_data,
+                "quantidade": self.quantidade,
+                "preco_unitario": float(self.preco_unitario),
+            }
+        except Exception:
+
+            return {
+                "produto": {
+                    "id": "erro",
+                    "titulo": "Erro ao carregar produto"
+                },
+                "quantidade": self.quantidade,
+                "preco_unitario": float(self.preco_unitario),
+            }
 
 class Pedido(Document):
     cliente = ReferenceField(Cliente, required=True)
